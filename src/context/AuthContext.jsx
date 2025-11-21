@@ -1,8 +1,9 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 const API_BASE = "http://localhost:3000";
 
+// -------------- LOGIN REQUEST ----------------
 async function loginRequest({ identifier, password }) {
   const body = identifier.includes("@")
     ? { email: identifier, password }
@@ -14,9 +15,11 @@ async function loginRequest({ identifier, password }) {
     body: JSON.stringify(body),
   });
 
-  return res.json().then(data => ({ ok: res.ok, ...data }));
+  const data = await res.json();
+  return { ok: res.ok, ...data };
 }
 
+// -------------- REGISTER REQUEST ----------------
 async function registerRequest({ name, identifier, password }) {
   const body = identifier.includes("@")
     ? { name, email: identifier, password }
@@ -28,17 +31,32 @@ async function registerRequest({ name, identifier, password }) {
     body: JSON.stringify(body),
   });
 
-  return res.json().then(data => ({ ok: res.ok, ...data }));
+  const data = await res.json();
+  return { ok: res.ok, ...data };
 }
 
+// -------------- AUTH PROVIDER ----------------
 export function AuthProvider({ children }) {
-  const value = {
-    login: loginRequest,
-    register: registerRequest,
+  const [user, setUser] = useState(null);
+
+  const login = async (creds) => {
+    const res = await loginRequest(creds);
+    if (res.ok && res.user) {
+      setUser(res.user);
+    }
+    return res;
+  };
+
+  const register = async (creds) => {
+    const res = await registerRequest(creds);
+    if (res.ok && res.user) {
+      setUser(res.user);
+    }
+    return res;
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, register }}>
       {children}
     </AuthContext.Provider>
   );
