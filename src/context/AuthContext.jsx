@@ -1,65 +1,42 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import api from '../services/api'
+import { createContext, useContext } from "react";
 
-const AuthContext = createContext()
+const AuthContext = createContext();
+const BASE_URL = "http://localhost:3000"; // Your backend
 
 export function AuthProvider({ children }) {
-const [user, setUser] = useState(null)
-const [token, setToken] = useState(() => localStorage.getItem('token'))
+  const login = async ({ identifier, password }) => {
+    const body = identifier.includes("@")
+      ? { email: identifier, password }
+      : { phone: identifier, password };
 
-useEffect(() => {
-if (token) {
-// simple token check - in a real app, verify or fetch user
-setUser({ name: localStorage.getItem('name') || 'User' })
-api.setToken(token)
-}
-}, [token])
+    const res = await fetch(`${BASE_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-const login = async ({ identifier, password }) => {
-// example backend expected: POST /auth/login { identifier, password }
-const res = await api.post('/auth/login', { identifier, password })
-if (res.ok) {
-const data = await res.json()
-localStorage.setItem('token', data.token)
-localStorage.setItem('name', data.name || data.user?.name || '')
-setToken(data.token)
-setUser({ name: data.name || data.user?.name || identifier })
-api.setToken(data.token)
-return { ok: true }
-}
-return { ok: false, message: await res.text() }
-}
+    return res.json();
+  };
 
-const register = async ({ name, identifier, password }) => {
-// example: POST /auth/register { name, identifier, password }
-const res = await api.post('/auth/register', { name, identifier, password })
-if (res.ok) {
-const data = await res.json()
-localStorage.setItem('token', data.token)
-localStorage.setItem('name', name)
-setToken(data.token)
-setUser({ name })
-api.setToken(data.token)
-return { ok: true }
-}
-return { ok: false, message: await res.text() }
+  const register = async ({ name, identifier, password }) => {
+    const body = identifier.includes("@")
+      ? { name, email: identifier, password }
+      : { name, phone: identifier, password };
+
+    const res = await fetch(`${BASE_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    return res.json();
+  };
+
+  return (
+    <AuthContext.Provider value={{ login, register }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-const logout = () => {
-localStorage.removeItem('token')
-localStorage.removeItem('name')
-setToken(null)
-setUser(null)
-api.setToken(null)
-}
-
-return (
-<AuthContext.Provider value={{ user, login, register, logout }}>
-{children}
-</AuthContext.Provider>
-)
-}
-
-export function useAuth() {
-return useContext(AuthContext)
-}
+export const useAuth = () => useContext(AuthContext);
