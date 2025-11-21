@@ -12,9 +12,24 @@ const [error, setError] = useState(null)
 
 const submit = async (e) => {
 e.preventDefault()
-const res = await login({ identifier, password })
-if (res.ok) nav('/home')
-else setError(res.message || 'Login failed')
+try {
+  const response = await fetch("http://localhost:3000/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier, password })
+  });
+
+  const data = await response.json();
+
+  if (data.success) {
+    nav('/home');   // go to home page after successful login
+  } else {
+    setError(data.message || "Invalid login information");
+  }
+} catch (err) {
+  console.error(err);
+  setError("Something went wrong. Try again.");
+}
 }
 
 return (
