@@ -13,9 +13,24 @@ const [error, setError] = useState(null)
 
 const submit = async (e) => {
 e.preventDefault()
-const res = await register({ name, identifier, password })
-if (res.ok) nav('/home')
-else setError(res.message || 'Registration failed')
+try {
+  const response = await fetch("http://localhost:3000/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, identifier, password })
+  });
+
+  const data = await response.json();
+
+  if (data.success) {
+    nav('/home');   // go to home after successful sign-up
+  } else {
+    setError(data.message || "Registration failed");
+  }
+} catch (err) {
+  console.error(err);
+  setError("Something went wrong. Try again.");
+}
 }
 
 return (
